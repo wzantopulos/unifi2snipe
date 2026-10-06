@@ -99,7 +99,7 @@ func runSetup(cmd *cobra.Command, args []string) error {
 		{Name: "UniFi: Is Console", Element: "text", Format: "BOOLEAN", HelpText: "Whether the device is a UniFi console (UDM, UCK, etc.)"},
 		{Name: "UniFi: Host Name", Element: "text", Format: "ANY", HelpText: "Name of the UniFi controller/console managing this device"},
 		{Name: "UniFi: Host ID", Element: "text", Format: "ANY", HelpText: "ID of the UniFi controller/console managing this device"},
-		{Name: "UniFi: Adoption Time", Element: "text", Format: "DATE", HelpText: "When the device was adopted by the controller"},
+		{Name: "UniFi: Adoption Time", Element: "date_picker", Format: "DATE", HelpText: "When the device was adopted by the controller"},
 		{Name: "UniFi: Note", Element: "textarea", Format: "ANY", HelpText: "Note from UniFi device settings"},
 	}
 
@@ -216,8 +216,8 @@ func findOrCreateCategory(ctx context.Context, c *snipe.Client, name, categoryTy
 	}
 
 	createResp, _, err := c.Categories.CreateContext(ctx, snipeit.Category{
-		CommonFields: snipeit.CommonFields{Name: name},
-		Type:         categoryType,
+		CommonFields:  snipeit.CommonFields{Name: name},
+		CategoryType:  categoryType,
 	})
 	if err != nil {
 		return 0, fmt.Errorf("creating category %q: %w", name, err)
