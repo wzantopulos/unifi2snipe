@@ -233,13 +233,28 @@ func (c *Client) SetupFields(fieldsetID int, fields []FieldDef) (map[string]stri
 	if c.DryRun {
 		return nil, ErrDryRun
 	}
-	existing, _, err := c.Fields.List(nil)
-	if err != nil {
-		return nil, fmt.Errorf("listing existing fields: %w", err)
-	}
+
+	// Paginate through all fields — Snipe-IT returns at most 500 per page.
 	existingByName := make(map[string]snipeit.Field)
-	for _, f := range existing.Rows {
-		existingByName[f.Name] = f
+	page := 1
+	for {
+		existing, _, err := c.Fields.List(&snipeit.ListOptions{Page: page, Limit: 500})
+		if err != nil {
+			return nil, fmt.Errorf("listing existing fields (page %d): %w", page, err)
+		}
+		for _, f := range existing.Rows {
+			existingByName[f.Name] = f
+		}
+		// Stop when we've fetched all pages: either Total is 0 (no fields)
+		// or we've collected at least Total items across all pages so far.
+		totalPages := 0
+		if existing.Total > 0 && existing.Limit > 0 {
+			totalPages = (existing.Total + existing.Limit - 1) / existing.Limit
+		}
+		if totalPages == 0 || page >= totalPages {
+			break
+		}
+		page++
 	}
 
 	results := make(map[string]string)

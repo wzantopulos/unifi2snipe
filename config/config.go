@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 
 	"gopkg.in/yaml.v3"
@@ -223,7 +224,15 @@ func MergeFieldMapping(path string, newMappings map[string]string, replaceValues
 // MergeIDs updates snipe_it ID fields in the YAML config file.
 func MergeIDs(path string, manufacturerID, networkCategoryID, consoleCategoryID, fieldsetID int) error {
 	data, err := os.ReadFile(path)
-	if err != nil {
+	if os.IsNotExist(err) {
+		// Config file doesn't exist — copy from settings.example.yaml.
+		examplePath := filepath.Join(filepath.Dir(path), "settings.example.yaml")
+		exampleData, exErr := os.ReadFile(examplePath)
+		if exErr != nil {
+			return fmt.Errorf("config file %s does not exist and %s not found: %w", path, examplePath, exErr)
+		}
+		data = exampleData
+	} else if err != nil {
 		return fmt.Errorf("reading config file: %w", err)
 	}
 
