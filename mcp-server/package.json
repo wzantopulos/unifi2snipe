@@ -1,0 +1,22 @@
+{
+  "name": "unifi2snipe-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for unifi2snipe — exposes unifi2snipe CLI commands as MCP tools",
+  "main": "index.js",
+  "type": "commonjs",
+  "bin": {
+    "unifi2snipe-mcp": "./index.js"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"No tests yet\" && exit 0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "author": "",
+  "license": "MIT"
+}
