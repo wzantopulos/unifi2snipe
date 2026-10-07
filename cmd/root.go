@@ -176,7 +176,12 @@ func Execute() {
 		},
 	}
 
-	rootCmd.PersistentFlags().StringVar(&ConfigFile, "config", "settings.yaml", "Path to YAML config file")
+	home, _ := os.UserHomeDir()
+	defaultConfig := "settings.yaml"
+	if home != "" {
+		defaultConfig = filepath.Join(home, ".unifi2snipe.yaml")
+	}
+	rootCmd.PersistentFlags().StringVar(&ConfigFile, "config", defaultConfig, "Path to YAML config file")
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Verbose output (INFO level)")
 	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "Debug output (DEBUG level)")
 	rootCmd.PersistentFlags().StringVar(&logFile, "log-file", "", "Append log output to this file (in addition to stderr)")
