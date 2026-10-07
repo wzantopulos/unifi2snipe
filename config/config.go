@@ -54,7 +54,20 @@ type SyncConfig struct {
 func Load(path string) (*Config, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("reading config file: %w", err)
+		if os.IsNotExist(err) {
+			// Config file doesn't exist — copy from settings.example.yaml
+			examplePath := filepath.Join(filepath.Dir(path), "settings.example.yaml")
+			data, err = os.ReadFile(examplePath)
+			if err != nil {
+				return nil, fmt.Errorf("config file %s does not exist and fallback %s also not found", path, examplePath)
+			}
+			// Write the example as the actual config file
+			if err := os.WriteFile(path, data, 0600); err != nil {
+				return nil, fmt.Errorf("creating config file from example: %w", err)
+			}
+		} else {
+			return nil, fmt.Errorf("reading config file: %w", err)
+		}
 	}
 
 	cfg := &Config{}
