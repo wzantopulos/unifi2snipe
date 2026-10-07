@@ -177,10 +177,11 @@ func Execute() {
 		},
 	}
 
-	home, _ := os.UserHomeDir()
+	// Derive config path from the binary's directory so config lives next to the binary
+	exe, err := os.Executable()
 	defaultConfig := "settings.yaml"
-	if home != "" {
-		defaultConfig = filepath.Join(home, ".unifi2snipe.yaml")
+	if err == nil && exe != "" {
+		defaultConfig = filepath.Join(filepath.Dir(exe), "settings.yaml")
 	}
 	rootCmd.PersistentFlags().StringVar(&ConfigFile, "config", defaultConfig, "Path to YAML config file")
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Verbose output (INFO level)")
