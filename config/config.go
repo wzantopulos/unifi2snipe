@@ -133,7 +133,10 @@ func Load(path string) (*Config, error) {
 			// Config file missing — use the embedded example and create it on disk
 			data = []byte(embeddedExampleConfig)
 			if err := os.WriteFile(path, data, 0600); err != nil {
-				return nil, fmt.Errorf("creating config file from example: %w", err)
+				// File couldn't be created — warn but continue with embedded defaults
+				fmt.Fprintf(os.Stderr, "WARNING: Could not create config file %s (check write permissions): %v\n", path, err)
+			} else {
+				fmt.Fprintf(os.Stderr, "INFO: Created config file %s — edit it and fill in your credentials\n", path)
 			}
 		} else {
 			return nil, fmt.Errorf("reading config file: %w", err)
