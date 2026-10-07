@@ -177,10 +177,10 @@ func Execute() {
 		},
 	}
 
-	// Derive config path from the binary's directory so config lives next to the binary
-	exe, err := os.Executable()
+	// Default to settings.yaml next to the binary, falling back to current directory
+	exe, _ := os.Executable()
 	defaultConfig := "settings.yaml"
-	if err == nil && exe != "" {
+	if exe != "" {
 		defaultConfig = filepath.Join(filepath.Dir(exe), "settings.yaml")
 	}
 	rootCmd.PersistentFlags().StringVar(&ConfigFile, "config", defaultConfig, "Path to YAML config file")
