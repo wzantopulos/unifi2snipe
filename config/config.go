@@ -9,6 +9,80 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// embeddedExampleConfig is the default settings bundled with the binary.
+// Used when settings.yaml doesn't exist.
+const embeddedExampleConfig = `# unifi2snipe settings
+# Copy this file to settings.yaml and fill in your values.
+
+unifi:
+  # UniFi Site Manager API key (https://unifi.ui.com -> Settings -> API)
+  api_key: ""
+  # Base URL (defaults to https://api.ui.com, rarely needs changing)
+  # base_url: "https://api.ui.com"
+
+snipe_it:
+  # Snipe-IT instance URL
+  url: "https://snipe.example.com"
+  # Snipe-IT API key (Admin -> Personal API Keys)
+  api_key: ""
+  # Ubiquiti manufacturer ID in Snipe-IT
+  manufacturer_id: 0
+  # Default status label ID for newly created assets (e.g. "Ready to Deploy")
+  default_status_id: 0
+  # Default category ID for new models (fallback)
+  category_id: 0
+  # Category for network devices (switches, APs, routers) - optional
+  # network_category_id: 0
+  # Category for console devices (UDM, UCK) - optional
+  # console_category_id: 0
+  # Custom fieldset ID to associate with new models (created by 'setup' command)
+  custom_fieldset_id: 0
+
+sync:
+  # Simulate without making changes
+  dry_run: false
+  # Ignore existing values, always update
+  force: false
+  # Enable Snipe-IT rate limiting (recommended for large syncs)
+  rate_limit: true
+  # Only update existing assets, never create new ones
+  update_only: false
+  # Use cached data from 'download' command
+  use_cache: false
+  # Directory for cached API responses
+  cache_dir: ".cache"
+  # Set asset name from UniFi device name on create
+  set_name: true
+  # Checkout assets to locations from location_mapping (uses adoption_time as checkout date)
+  checkout: false
+
+  # Filter by UniFi product lines (empty = all)
+  # product_lines:
+  #   - network
+  #   - protect
+
+  # Filter by specific host/controller IDs (empty = all)
+  # host_ids:
+  #   - "host-uuid-here"
+
+  # Location mapping: UniFi host name or host ID -> Snipe-IT location ID
+  # Devices managed by the matched host will be assigned to that location.
+  # Keys can be either the host name (reportedState.name, e.g. "Office UDM")
+  # or the host ID (a UUID). Host name is checked first.
+  # location_mapping:
+  #   "Office UDM": 1
+  #   "Warehouse UCK": 2
+  #   "abc12345-def6-7890-abcd-ef1234567890": 3
+
+  # Field mapping: Snipe-IT custom field DB column -> UniFi attribute
+  # Run 'unifi2snipe setup' to auto-generate these.
+  # Available UniFi attributes:
+  #   mac, ip, name, model, shortname, version, firmware_status,
+  #   status, product_line, is_managed, is_console, note,
+  #   host_id, host_name, adoption_time, startup_time
+  field_mapping: {}
+`
+
 // Config holds all configuration for unifi2snipe.
 type Config struct {
 	UniFi   UniFiConfig   `yaml:"unifi"`
@@ -36,12 +110,12 @@ type SnipeITConfig struct {
 
 // SyncConfig holds sync behavior settings.
 type SyncConfig struct {
-	DryRun       bool              `yaml:"dry_run"`
-	Force        bool              `yaml:"force"`         // ignore timestamps, always update
-	RateLimit    bool              `yaml:"rate_limit"`    // enable rate limiting
-	UpdateOnly   bool              `yaml:"update_only"`   // only update existing assets, never create
-	UseCache     bool              `yaml:"use_cache"`     // use cached data instead of fetching from UniFi
-	CacheDir     string            `yaml:"cache_dir"`     // directory for cached API responses (default ".cache")
+	DryRun          bool              `yaml:"dry_run"`
+	Force           bool              `yaml:"force"`         // ignore timestamps, always update
+	RateLimit       bool              `yaml:"rate_limit"`    // enable rate limiting
+	UpdateOnly      bool              `yaml:"update_only"`   // only update existing assets, never create
+	UseCache        bool              `yaml:"use_cache"`     // use cached data instead of fetching from UniFi
+	CacheDir        string            `yaml:"cache_dir"`     // directory for cached API responses (default ".cache")
 	FieldMapping    map[string]string `yaml:"field_mapping"`    // snipe field -> unifi attribute mapping
 	LocationMapping map[string]int    `yaml:"location_mapping"` // host name or host ID -> snipe-it location ID
 	ProductLines    []string          `yaml:"product_lines"`    // filter by product line (e.g. "network", "protect")
@@ -51,17 +125,13 @@ type SyncConfig struct {
 }
 
 // Load reads configuration from a YAML file and applies environment variable overrides.
+// If the config file does not exist, it creates one from the embedded example.
 func Load(path string) (*Config, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			// Config file doesn't exist — copy from settings.example.yaml
-			examplePath := filepath.Join(filepath.Dir(path), "settings.example.yaml")
-			data, err = os.ReadFile(examplePath)
-			if err != nil {
-				return nil, fmt.Errorf("config file %s does not exist and fallback %s also not found", path, examplePath)
-			}
-			// Write the example as the actual config file
+			// Config file missing — use the embedded example and create it on disk
+			data = []byte(embeddedExampleConfig)
 			if err := os.WriteFile(path, data, 0600); err != nil {
 				return nil, fmt.Errorf("creating config file from example: %w", err)
 			}
