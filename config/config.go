@@ -194,8 +194,8 @@ func (c *Config) ValidateSnipeIT() error {
 	if c.SnipeIT.ManufacturerID == 0 {
 		return fmt.Errorf("snipe_it.manufacturer_id is required")
 	}
-	if c.SnipeIT.DefaultStatusID == 0 {
-		return fmt.Errorf("snipe_it.default_status_id is required")
+	if c.SnipeIT.DefaultStatusID == 0 && !c.Sync.UpdateOnly {
+		return fmt.Errorf("snipe_it.default_status_id is required (or use --update-only to skip new asset creation)")
 	}
 	if c.SnipeIT.CategoryID == 0 && c.SnipeIT.NetworkCategoryID == 0 && c.SnipeIT.ConsoleCategoryID == 0 {
 		return fmt.Errorf("snipe_it.category_id (or network_category_id/console_category_id) is required")
